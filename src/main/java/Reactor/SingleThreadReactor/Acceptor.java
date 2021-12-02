@@ -1,4 +1,4 @@
-package SingleThreadReactor;
+package Reactor.SingleThreadReactor;
 
 import java.io.IOException;
 import java.nio.channels.Selector;
