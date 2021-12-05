@@ -21,7 +21,7 @@ public class NIOClient implements Runnable {
             socketChannel.configureBlocking(false);
             socketChannel.connect(new InetSocketAddress(ip, port));
             // 注册连接事件
-            SelectionKey key = socketChannel.register(selector, SelectionKey.OP_ACCEPT);
+            SelectionKey key = socketChannel.register(selector, SelectionKey.OP_CONNECT);
             key.attach(new Connector(socketChannel, selector));
         } catch (IOException e) {
             e.printStackTrace();
