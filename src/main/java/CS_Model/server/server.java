@@ -1,25 +1,23 @@
-package CS_model.server;
-
+package CS_Model.server;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 public class server {
     public static void main(String[] args) {
         try {
-            int port = 2333;
+            int port = 6666;
 
             ServerSocket serverSocket = new ServerSocket(port);
-            System.out.println("æœåŠ¡å™¨å¯åŠ¨..." + serverSocket.getLocalSocketAddress());  //æœåŠ¡å™¨å¯åŠ¨,æ‰“å°æœ¬åœ°åœ°å€
+            System.out.println("·şÎñÆ÷Æô¶¯..." + serverSocket.getLocalSocketAddress());  //·şÎñÆ÷Æô¶¯,´òÓ¡±¾µØµØÖ·
 
-            //çº¿ç¨‹æ± 
+            //Ïß³Ì³Ø
             ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
-            //å¼€å¯å¤šçº¿ç¨‹
-            while (true) {
+
+            while (true) {  //ËÀÑ­»·¿ªÆô¶àÏß³Ì
                 Socket client = serverSocket.accept();
-                System.out.println("æœ‰å®¢æˆ·ç«¯è¿æ¥åˆ°æœåŠ¡å™¨:" + client.getRemoteSocketAddress());
+                System.out.println("ÓĞ¿Í»§¶ËÁ¬½Óµ½·şÎñÆ÷:" + client.getRemoteSocketAddress());
                 executorService.execute(new HandlerClient(client));
             }
         } catch (IOException e) {

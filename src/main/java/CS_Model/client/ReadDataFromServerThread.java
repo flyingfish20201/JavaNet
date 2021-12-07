@@ -1,10 +1,12 @@
-package CS_model.client;
+package CS_Model.client;
 
 import java.io.InputStream;
 import java.net.Socket;
 import java.util.Scanner;
 
-
+/**
+ * description:¿Í»§¶Ë´Ó·şÎñ¶Ë¶ÁÈ¡Êı¾İµÄÏß³Ì
+ **/
 public class ReadDataFromServerThread extends Thread {
     private final Socket client;
 
@@ -18,8 +20,8 @@ public class ReadDataFromServerThread extends Thread {
             InputStream clientInput = this.client.getInputStream();
             Scanner scanner = new Scanner(clientInput);
             while (true) {
-                String data = scanner.nextLine();//æŒ‰è¡Œè¯»æ•°æ®
-                System.out.println("æ¥è‡ªæœåŠ¡ç«¯æ¶ˆæ¯:" + data);
+                String data = scanner.nextLine();//°´ĞĞ¶ÁÊı¾İ
+                System.out.println("À´×Ô·şÎñ¶ËÏûÏ¢:" + data);
             }
         } catch (Exception e) {
             e.printStackTrace();

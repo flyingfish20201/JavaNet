@@ -1,4 +1,4 @@
-package CS_model.client;
+package CS_Model.client;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -6,7 +6,9 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.util.Scanner;
 
-
+/**
+ * description:¿Í»§¶Ë¸ø·þÎñ¶Ë·¢ËÍÊý¾ÝµÄÏß³Ì
+ **/
 public class WriteDataToServerThread extends Thread {
     private final Socket client;
 
@@ -19,20 +21,20 @@ public class WriteDataToServerThread extends Thread {
         try {
             OutputStream clientOutput = this.client.getOutputStream();
             OutputStreamWriter writer = new OutputStreamWriter(clientOutput);
-            Scanner scanner = new Scanner(System.in);  //æœ‰å®¢æˆ·ç«¯è¾“å…¥æ•°æ®
+            Scanner scanner = new Scanner(System.in);  //ÓÐ¿Í»§¶ËÊäÈëÊý¾Ý
             while (true) {
-                System.out.print("è¯·è¾“å…¥>>");
-                String data = scanner.nextLine(); //è¯»æ•°æ®
+                System.out.print("ÇëÊäÈë>>");
+                String data = scanner.nextLine(); //¶ÁÊý¾Ý
                 writer.write(data + "\n");
                 writer.flush();
                 if (data.equals("bye")) {
-                    System.out.println("ç³»ç»Ÿå…³é—­");
+                    System.out.println("ÏµÍ³¹Ø±Õ");
                     break;
                 }
             }
             this.client.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
         }
     }
 }
