@@ -4,6 +4,8 @@
 
 ### 代码结构
 
+- **CS_Model** C/S模式
+- **MultiThread** 非阻塞服务器和客户端
 - **SimpleNet** 单线程阻塞服务器和客户端
 - **HttpClient** HTTP demo
 - **MixEchoServer** 同时使用了阻塞和非阻塞模式的单线程echo服务器
