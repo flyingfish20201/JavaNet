@@ -1,4 +1,4 @@
-package MultiThread;
+package NoBlock;
 
 import java.io.BufferedReader;
 import java.io.IOException;

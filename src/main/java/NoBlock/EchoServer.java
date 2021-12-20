@@ -1,3 +1,5 @@
+package NoBlock;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -10,83 +12,69 @@ import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.Set;
 
-public class MixEchoServer {
+/**
+ * Ê¹ÓÃ·Ç×èÈûÄ£Ê½µÄSocketChannel,ServerSocketChannel.
+ */
+public class EchoServer {
     private Selector selector = null;
     private ServerSocketChannel serverSocketChannel = null;
-    private int port = 2333;
+    private int port = 8000;
     private Charset charset = Charset.forName("GBK");
-    // æŽ¥å—å’Œå‘é€æ•°æ®
-    private Object gate = new Object();
 
-    public MixEchoServer() throws IOException {
+    public EchoServer() throws IOException {
+        // ´´½¨Ò»¸öselector¶ÔÏó
         selector = Selector.open();
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.socket().setReuseAddress(true);
+        // Ê¹serverSocketChannel¹¤×÷ÓÚ·Ç×èÈûÄ£Ê½
+        serverSocketChannel.configureBlocking(false);
         serverSocketChannel.socket().bind(new InetSocketAddress(port));
-        System.out.println("Server is running");
+        System.out.println("·þÎñÆ÷Æô¶¯...");
     }
 
-    public static void main(String[] args) throws Exception {
-        final MixEchoServer server = new MixEchoServer();
-        // åŒ¿åçº¿ç¨‹è´Ÿè´£æŽ¥å—å®¢æˆ·ç«¯è¿žæŽ¥
-        Thread accept = new Thread() {
-            @Override
-            public void run() {
-                server.accept();
-            }
-        };
-        accept.start();
-        // ä¸»çº¿ç¨‹è´Ÿè´£æŽ¥æ”¶å’Œå‘é€æ•°æ®
-        server.service();
-    }
-
-    // serverSocketChannelå…ˆé‡‡ç”¨é»˜è®¤çš„é˜»å¡žæ¨¡å¼ï¼Œç›´åˆ°æ”¶åˆ°å®¢æˆ·è¿žæŽ¥ä¹‹åŽï¼Œè¿›å…¥éžé˜»å¡žæ¨¡å¼
-    public void accept() {
-        for (; ; ) {
-            try {
-                SocketChannel socketChannel = serverSocketChannel.accept();
-                System.out.println("æŽ¥å—åˆ°å®¢æˆ·è¿žæŽ¥ï¼Œæ¥è‡ª" + socketChannel.socket().getInetAddress() + ":" + socketChannel.socket().getPort());
-                socketChannel.configureBlocking(false); // è®¾ç½®ä¸ºéžé˜»å¡žæ¨¡å¼
-
-                ByteBuffer buffer = ByteBuffer.allocate(1024);
-                // acceptçº¿ç¨‹æ‰§è¡Œè¿™ä¸ªåŒæ­¥ä»£ç å—
-                synchronized (gate) {
-                    selector.wakeup();
-                    // æ³¨å†Œäº‹ä»¶
-                    socketChannel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, buffer);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+    public static void main(String[] args) throws IOException {
+        new EchoServer().service();
     }
 
     public void service() throws IOException {
-        // æ— é™forå¾ªçŽ¯
-        for (; ; ) {
-            // ç©ºçš„åŒæ­¥ä»£ç å—ï¼Œç›®çš„æ˜¯è®©ä¸»çº¿ç¨‹ç­‰å¾…acceptçº¿ç¨‹æ‰§è¡Œå®ŒåŒæ­¥ä»£ç å—
-            synchronized (gate) {
-            }
-            int n = selector.select();
-
-            if (n == 0) {
-                continue;
-            }
-            Set readyKeys = selector.selectedKeys();
-            Iterator it = readyKeys.iterator();
+        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+        while (selector.select() > 0) {
+            Set<SelectionKey> readyKeys = selector.selectedKeys();
+            Iterator<SelectionKey> it = readyKeys.iterator();
             while (it.hasNext()) {
+                SelectionKey key = null;
                 try {
-                    SelectionKey key = null;
-                    key = (SelectionKey) it.next();
-                    it.remove(); // åˆ åŽ»å·²ä½¿ç”¨çš„key
+                    key = it.next();
+                    it.remove();
+                    if (key.isAcceptable()) {
+                        ServerSocketChannel ssc = (ServerSocketChannel) key
+                                .channel();
+                        SocketChannel socketChannel = (SocketChannel) ssc
+                                .accept();
+                        System.out.println("½ÓÊÕµ½¿Í»§Á¬½Ó£¬À´×Ô£º"
+                                + socketChannel.socket().getInetAddress() + ":"
+                                + socketChannel.socket().getPort());
+                        socketChannel.configureBlocking(false);
+                        ByteBuffer buffer = ByteBuffer.allocate(1024);
+                        socketChannel.register(selector, SelectionKey.OP_READ
+                                | SelectionKey.OP_WRITE, buffer);
+                    }
                     if (key.isReadable()) {
                         receive(key);
                     }
                     if (key.isWritable()) {
                         send(key);
                     }
-                } catch (Exception e) {
+                } catch (IOException e) {
                     e.printStackTrace();
+                    try {
+                        if (key != null) {
+                            key.cancel();
+                            key.channel().close();
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
                 }
             }
         }
@@ -95,31 +83,29 @@ public class MixEchoServer {
     public void send(SelectionKey key) throws IOException {
         ByteBuffer buffer = (ByteBuffer) key.attachment();
         SocketChannel socketChannel = (SocketChannel) key.channel();
-        buffer.flip();
+        buffer.flip();// °Ñ¼«ÏÞÉèÎªÎ»ÖÃ£¬°ÑÎ»ÖÃÉèÎª0
         String data = decode(buffer);
         if (data.indexOf("\r\n") == -1) {
             return;
         }
         String outputData = data.substring(0, data.indexOf("\n") + 1);
-        System.out.println(outputData);
+        System.out.print(outputData);
         ByteBuffer outputBuffer = encode("echo:" + outputData);
         while (outputBuffer.hasRemaining()) {
             socketChannel.write(outputBuffer);
         }
         ByteBuffer temp = encode(outputData);
         buffer.position(temp.limit());
-        buffer.compact();
+        buffer.compact();// É¾³ýÒÑ¾­´¦ÀíµÄ×Ö·û´®
         if (outputData.equals("bye\r\n")) {
             key.cancel();
-            System.out.print(socketChannel.socket().getInetAddress() + ":" + socketChannel.socket().getPort());
             socketChannel.close();
-            System.out.println("Close connection with client");
+            System.out.println("¹Ø±ÕÓë¿Í»§¶ËµÄÁ¬½Ó");
         }
     }
 
     public void receive(SelectionKey key) throws IOException {
         ByteBuffer buffer = (ByteBuffer) key.attachment();
-
         SocketChannel socketChannel = (SocketChannel) key.channel();
         ByteBuffer readBuff = ByteBuffer.allocate(32);
         socketChannel.read(readBuff);
