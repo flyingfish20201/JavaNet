@@ -8,6 +8,7 @@ import java.util.Scanner;
 
 public class HttpClient {
     public static void main(String[] args) throws IOException {
+
 /*
         Scanner sc = new Scanner(System.in);
         StringBuilder builder = new StringBuilder("https://cn.bing.com/search?q=");
