@@ -9,70 +9,77 @@ import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Set;
 
-public class EchoServer implements Runnable {
+public class EchoServer {
 
-    // final变量一定要在构造器中初始化
-    // 若为static final则一定要直接初始化或者在static代码块中初始化
-    final Selector selector;
-    final ServerSocketChannel serverSocket;
+    private Selector selector;
+    private ServerSocketChannel serverSocketChannel;
 
     public EchoServer(int port) throws IOException {
+        // 初始化Selector和Channel，并完成注册
         selector = Selector.open();
-        serverSocket = ServerSocketChannel.open();
-        serverSocket.socket().bind(new InetSocketAddress(port));
-        serverSocket.configureBlocking(false);
-        SelectionKey sKey = serverSocket.register(selector, SelectionKey.OP_ACCEPT);
-        sKey.attach(new Acceptor());
+        serverSocketChannel = ServerSocketChannel.open();
+        serverSocketChannel.configureBlocking(false);
+        SelectionKey selectionKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+        selectionKey.attach(new Acceptor());
+        serverSocketChannel.bind(new InetSocketAddress(port));
     }
 
-
-    /**
-     * DispatchLoop
-     * 派发循环，循环调用dispatch()方法
-     */
-    @Override
-    public void run() {
+    public static void main(String[] args) {
+        EchoServer reactor;
         try {
-            while (!Thread.interrupted()) {
-                selector.select();
-                Set<SelectionKey> selected = selector.selectedKeys();
-                Iterator<SelectionKey> iterator = selected.iterator();
-                while (iterator.hasNext()) {
-                    dispatch(iterator.next());
-                }
-                // 清空selector的兴趣集合，和使用迭代器的remove()方法一样
-                selected.clear();
-            }
-        } catch (Exception e) {
+            reactor = new EchoServer(2333);
+            reactor.dispatchLoop();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     /**
-     * 派发任务，相当于判断条件以后再调用指定方法
-     * 使用dispatch()可以无差别的直接派发任务到指定对象并且调用指定方法
-     * 例如：Accept的接收方法，Handler的处理报文的方法
+     * 轮询分发任务
      *
-     * @param key
+     * @throws IOException
      */
-    private void dispatch(SelectionKey key) {
-        System.out.println("发布了一个新任务");
-        Runnable r = (Runnable) (key.attachment());
-        if (r != null) {
-            r.run();
+    private void dispatchLoop() throws IOException {
+        while (true) {
+            selector.select();
+            Set<SelectionKey> selectionKeys = selector.selectedKeys();
+            Iterator<SelectionKey> iterator = selectionKeys.iterator();
+
+            while (iterator.hasNext()) {
+                SelectionKey selectionKey = iterator.next();
+                dispatchTask(selectionKey);
+            }
+            selectionKeys.clear();
         }
     }
 
-    class Acceptor implements Runnable {
+    /**
+     * 任务分派器的进阶版，耦合性降低，拓展性增强
+     * 子类只需要实现Runnable接口，并重写run()方法，就可以实现多种任务的无差别分派
+     *
+     * @param taskSelectionKey
+     */
+    private void dispatchTask(SelectionKey taskSelectionKey) {
+        Runnable runnable = (Runnable) taskSelectionKey.attachment();
+        if (runnable != null) {
+            runnable.run();
+        }
+    }
+
+    /**
+     * Accept类，实际TCP连接的建立和SocketChannel的获取在这个类中实现
+     * 根据类的实现，可以发现一个Accept类对应一个ServerSocketChannel
+     *
+     * @author CringKong
+     */
+    private class Acceptor implements Runnable {
+
         @Override
         public void run() {
             try {
-                SocketChannel socketChannel = serverSocket.accept();
+                SocketChannel socketChannel = serverSocketChannel.accept();
                 if (socketChannel != null) {
-                    /**
-                     * 每次new一个Handler相当于先注册了一个key到selector
-                     * 而真正进行读写操作发送操作还是依靠DispatchLoop实现
-                     */
+                    // 创建一个新的处理类
                     new Handler(socketChannel, selector);
                 }
             } catch (Exception e) {
