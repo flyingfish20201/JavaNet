@@ -70,7 +70,6 @@ public class EchoServer {
      * Accept类，实际TCP连接的建立和SocketChannel的获取在这个类中实现
      * 根据类的实现，可以发现一个Accept类对应一个ServerSocketChannel
      *
-     * @author CringKong
      */
     private class Acceptor implements Runnable {
 
